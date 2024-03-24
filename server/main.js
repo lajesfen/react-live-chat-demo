@@ -19,6 +19,16 @@ app.use(cors());
 
 io.on('connection', (socket) => {
     console.log(`⚡: ${socket.id} user just connected!`);
+
+    socket.on('message', (data) => {
+        io.sockets.emit('message', {
+            id: data.id,
+            text: data.text,
+            author: data.author,
+            timestamp: new Date(data.timestamp),
+        })
+    })
+
     socket.on('disconnect', () => {
         console.log('🔥: A user disconnected');
     });

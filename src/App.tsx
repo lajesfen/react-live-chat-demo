@@ -19,23 +19,40 @@ export default function App() {
   useEffect(() => {
     function onConnect() {
       setIsConnected(true);
-      sendMessage('system', 'Se ha conectado ' + socket.id?.toString());
+      sendMessageEvent('system', 'Se ha conectado ' + socket.id?.toString());
     }
 
     function onDisconnect() {
       setIsConnected(false);
     }
 
+    function onMessageEvent(value: Message) {
+      pushMessage(value)
+    }
+
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+    socket.on('message', onMessageEvent)
 
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      socket.off('message', onMessageEvent);
     };
   }, []);
 
-  function sendMessage(author: string, text: string) {
+  function pushMessage(data: Message) {
+    const msg: Message = {
+      id: data.id,
+      text: data.text,
+      author: data.author,
+      timestamp: new Date(data.timestamp),
+    }
+
+    setMessages((prev) => [...prev, msg]);
+  }
+
+  function sendMessageEvent(author: string, text: string) {
     const msg: Message = {
       id: uuidv1(),
       text: text,
@@ -43,7 +60,7 @@ export default function App() {
       timestamp: new Date(),
     }
 
-    setMessages((prev) => [...prev, msg]);
+    socket.emit('message', msg)
   }
 
   return (
@@ -74,14 +91,14 @@ export default function App() {
           onChange={(event) => setCurrentMessage(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
-              sendMessage(socket.id || '', currentMessage);
+              sendMessageEvent(socket.id || '', currentMessage);
               setCurrentMessage('');
             }
           }}
           className='w-full pl-4 rounded-md border border-1 border-gray-300' />
         <button className='px-5 text-black hover:text-gray-500'
           onClick={() => {
-            sendMessage(socket.id || '', currentMessage);
+            sendMessageEvent(socket.id || '', currentMessage);
             setCurrentMessage('');
           }}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
